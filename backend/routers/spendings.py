@@ -20,13 +20,13 @@ from typing import Dict, List
 
 from fastapi import APIRouter, HTTPException, Query
 
-from backend.database import collections
-from backend.schemas import (
+from database import collections
+from schemas import (
     BulkSpendingsRequest,
     SpendingDailyDoc,
     SpendingItemAnalyzed,
 )
-from backend.ai_service import analyze_item, generate_daily_comment
+from ai_service import analyze_item, generate_daily_comment
 
 
 router = APIRouter(prefix="/api/spendings", tags=["spendings"])

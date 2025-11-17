@@ -17,12 +17,11 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.database import connect_to_mongo, close_mongo_connection
-from backend.routers.spendings import router as spendings_router
-from backend.routers.reports import router as reports_router
-from backend.routers.users import router as users_router
-from backend.routers.auth import router as auth_router
-
+from database import connect_to_mongo, close_mongo_connection
+from routers.spendings import router as spendings_router
+from routers.reports import router as reports_router
+from routers.users import router as users_router
+from routers.auth import router as auth_router
 
 app = FastAPI(title="spendWallet API", version="0.1.0")
 
@@ -41,7 +40,7 @@ async def on_startup():
     # 서버 시작 시 MongoDB 연결
     await connect_to_mongo()
     # 필수 인덱스 준비 (이메일 unique)
-    from backend.database import collections
+    from database import collections
 
     cols = collections()
     try:

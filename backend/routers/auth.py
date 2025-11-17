@@ -18,7 +18,7 @@ from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
 import jwt
 
-from backend.database import collections
+from database import collections
 
 
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me")

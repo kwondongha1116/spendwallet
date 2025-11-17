@@ -8,8 +8,8 @@ from typing import Dict
 
 from fastapi import APIRouter
 
-from backend.database import collections
-from backend.schemas import UserCreate
+from database import collections
+from schemas import UserCreate
 
 
 router = APIRouter(prefix="/api/users", tags=["users"])

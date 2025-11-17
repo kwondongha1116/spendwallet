@@ -17,9 +17,9 @@ from typing import Dict, List
 
 from fastapi import APIRouter, HTTPException, Query
 
-from backend.database import collections
-from backend.schemas import DailyReportResponse, WeeklyReportResponse, MonthlyProfileResponse
-from backend.ai_service import generate_weekly_comment, generate_monthly_profile
+from database import collections
+from schemas import DailyReportResponse, WeeklyReportResponse, MonthlyProfileResponse
+from ai_service import generate_weekly_comment, generate_monthly_profile
 
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
