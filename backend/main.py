@@ -25,10 +25,15 @@ from routers.auth import router as auth_router
 
 app = FastAPI(title="spendWallet API", version="0.1.0")
 
-# CORS 설정 (개발 편의를 위해 와일드카드 허용)
+# CORS 설정 (정확한 Origin 지정)
+origins = [
+    "http://localhost:5173",              # 로컬 개발용
+    "https://spendwallet.vercel.app",     # Vercel 배포 주소
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
