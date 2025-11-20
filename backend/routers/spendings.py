@@ -114,6 +114,67 @@ async def post_bulk_spendings(payload: BulkSpendingsRequest):
     return {"saved": len(analyzed_items), "daily": {"id": str(res.inserted_id), "date": date_str}}
 
 
+@router.put("/bulk")
+async def put_bulk_spendings(payload: BulkSpendingsRequest):
+    """특정 날짜의 소비 항목을 통째로 교체 (수정/삭제 반영용)
+    - 동일 날짜 문서가 있으면 items를 덮어쓰고 total/코멘트를 다시 계산합니다.
+    - 없으면 새로 생성합니다.
+    """
+    col = collections()["spendings"]
+    date_str = _normalize_date(payload.date)
+
+    if not payload.items:
+        # 항목이 비어 있으면 해당 날짜 문서를 삭제
+        await col.delete_one({"user_id": payload.user_id, "spent_at": date_str})
+        return {"saved": 0, "daily": {"id": None, "date": date_str}}
+
+    analyzed_items: List[Dict] = []
+    for it in payload.items:
+        if payload.analyze:
+            ai = analyze_item(it.memo, it.amount)
+            analyzed_items.append(
+                SpendingItemAnalyzed(
+                    memo=it.memo,
+                    amount=it.amount,
+                    category=ai.get("category"),
+                    tags=ai.get("tags", []),
+                    confidence=ai.get("confidence"),
+                ).model_dump()
+            )
+        else:
+            analyzed_items.append(
+                SpendingItemAnalyzed(memo=it.memo, amount=it.amount).model_dump()
+            )
+
+    total_amount = sum(it.amount for it in payload.items)
+    ai_comment = generate_daily_comment(analyzed_items)
+
+    existing = await col.find_one({"user_id": payload.user_id, "spent_at": date_str})
+    if existing:
+        await col.update_one(
+            {"_id": existing["_id"]},
+            {
+                "$set": {
+                    "items": analyzed_items,
+                    "total_amount": total_amount,
+                    "ai_comment": ai_comment,
+                }
+            },
+        )
+        return {"saved": len(analyzed_items), "daily": {"id": str(existing["_id"]), "date": date_str}}
+
+    doc = SpendingDailyDoc(
+        user_id=payload.user_id,
+        spent_at=date_str,
+        items=[SpendingItemAnalyzed(**i) for i in analyzed_items],
+        total_amount=total_amount,
+        ai_comment=ai_comment,
+        created_at=datetime.utcnow(),
+    ).model_dump(by_alias=True, exclude_none=True)
+    res = await col.insert_one(doc)
+    return {"saved": len(analyzed_items), "daily": {"id": str(res.inserted_id), "date": date_str}}
+
+
 @router.get("")
 async def list_spendings(
     user_id: str = Query(...),

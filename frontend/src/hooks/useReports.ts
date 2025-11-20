@@ -12,4 +12,3 @@ export function useWeeklyReport(p: { user_id: string; week: string }) {
 export function useMonthlyProfile(p: { user_id: string; month: string }) {
   return useQuery({ queryKey: ['monthly', p], queryFn: () => getMonthlyProfile(p) })
 }
-

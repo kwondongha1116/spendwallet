@@ -97,6 +97,8 @@ async def get_weekly_report(user_id: str = Query(...), week: str = Query(...)):
     this_totals = await _aggregate_category_sum(start, end)
     prev_totals = await _aggregate_category_sum(prev_start, prev_end)
 
+    total_amount = sum(this_totals.values())
+
     deltas: Dict[str, float] = {}
     keys = set(this_totals.keys()) | set(prev_totals.keys())
     for k in keys:
@@ -107,29 +109,31 @@ async def get_weekly_report(user_id: str = Query(...), week: str = Query(...)):
         else:
             deltas[k] = (a - b) / b
 
-    summary = {"totals": this_totals, "deltas": deltas, "week": week}
-    comment = generate_weekly_comment(summary)
+    weekly_col_ref = weekly_col
+    existing = await weekly_col_ref.find_one({"user_id": user_id, "week_start": start, "week_end": end})
 
-    existing = await weekly_col.find_one({"user_id": user_id, "week_start": start, "week_end": end})
-    if existing:
-        await weekly_col.update_one(
-            {"_id": existing["_id"]},
-            {"$set": {"totals": this_totals, "deltas": deltas, "comment": comment}},
-        )
+    # 총액이 같으면 기존 코멘트를 재사용 (AI 재호출 방지)
+    if existing and existing.get("total_amount") == total_amount:
+        comment = existing.get("comment", "")
     else:
-        await weekly_col.insert_one(
-            {
-                "user_id": user_id,
-                "week_start": start,
-                "week_end": end,
-                "totals": this_totals,
-                "deltas": deltas,
-                "comment": comment,
-                "created_at": datetime.utcnow(),
-            }
-        )
+        summary = {"totals": this_totals, "deltas": deltas, "week": week}
+        comment = generate_weekly_comment(summary)
+        doc = {
+            "user_id": user_id,
+            "week_start": start,
+            "week_end": end,
+            "totals": this_totals,
+            "deltas": deltas,
+            "comment": comment,
+            "total_amount": total_amount,
+            "updated_at": datetime.utcnow(),
+        }
+        if existing:
+            await weekly_col_ref.update_one({"_id": existing["_id"]}, {"$set": doc})
+        else:
+            await weekly_col_ref.insert_one({**doc, "created_at": datetime.utcnow()})
 
-    return WeeklyReportResponse(totals=this_totals, deltas=deltas, comment=comment)
+    return WeeklyReportResponse(totals=this_totals, deltas=deltas, comment=comment, total_amount=total_amount)
 
 
 @router.get("/monthly", response_model=MonthlyProfileResponse)
@@ -195,4 +199,3 @@ async def get_monthly_profile(user_id: str = Query(...), month: str = Query(...)
     return MonthlyProfileResponse(
         type=doc["type"], rationale=doc["rationale"], advice=doc["advice"]
     )
-

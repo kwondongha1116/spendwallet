@@ -3,12 +3,18 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import { useMemo } from 'react'
 
+type Props = {
+  summaries: Record<string, number>
+  onDateClick?: (dateStr: string) => void
+  onMonthChange?: (monthStr: string) => void // YYYY-MM
+}
+
 /**
  * CalendarView
- * - 월 달력에 날짜별 합계를 -20k 형태로 표시
- * - props.summaries: { 'YYYY-MM-DD': totalAmount }
+ * - 날짜별 합계를 "- 20k" 형태로 표시
+ * - summaries: { 'YYYY-MM-DD': totalAmount }
  */
-export default function CalendarView({ summaries, onDateClick }: { summaries: Record<string, number>; onDateClick?: (dateStr: string) => void }) {
+export default function CalendarView({ summaries, onDateClick, onMonthChange }: Props) {
   const events = useMemo(() => {
     return Object.entries(summaries).map(([date, amount]) => {
       const k = Math.round((amount || 0) / 1000)
@@ -31,15 +37,21 @@ export default function CalendarView({ summaries, onDateClick }: { summaries: Re
         height={650}
         dateClick={(info) => onDateClick?.(info.dateStr)}
         eventClick={(info) => {
-          const d = info.event.startStr?.slice(0,10)
+          const d = info.event.startStr?.slice(0, 10)
           if (d) onDateClick?.(d)
         }}
-        dayCellDidMount={(arg)=>{
-          // 마우스 오버 시 툴팁 텍스트
-          arg.el.setAttribute('title','일간 분석 확인하기')
+        datesSet={(arg) => {
+          const currentStart: Date = (arg.view as any).currentStart || arg.start
+          const y = currentStart.getFullYear()
+          const m = String(currentStart.getMonth() + 1).padStart(2, '0')
+          onMonthChange?.(`${y}-${m}`)
+        }}
+        dayCellDidMount={(arg) => {
+          arg.el.setAttribute('title', '일간 분석 확인하기')
           arg.el.style.cursor = 'pointer'
         }}
       />
     </div>
   )
 }
+

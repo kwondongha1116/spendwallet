@@ -1,21 +1,16 @@
-"""
-Pydantic 스키마 정의
+"""Pydantic schemas for API requests/responses.
 
-주요 모델:
-- SpendingItemInput / BulkSpendingsRequest
-- SpendingItemAnalyzed / SpendingDailyDoc
-- DailyReportResponse / WeeklyReportResponse / MonthlyProfileResponse
-
-모든 주요 필드/함수에 한국어 주석 포함.
+정리용 스키마 모음:
+- UserCreate, UserOut
+- BulkSpendingsRequest, SpendingDailyDoc
+- DailyReportResponse, WeeklyReportResponse, MonthlyProfileResponse
 """
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict
+
 from pydantic import BaseModel, Field
-
-
-# 공통: ObjectId는 문자열로 직렬화하여 처리
 
 
 class UserCreate(BaseModel):
@@ -32,17 +27,19 @@ class UserOut(BaseModel):
 
 class SpendingItemInput(BaseModel):
     """벌크 입력 시, 각 항목의 입력 스키마"""
+
     memo: str
     amount: int = Field(ge=0)
 
 
 class BulkSpendingsRequest(BaseModel):
     """벌크 입력 요청 바디
-    - user_id: 사용자 식별자 (간단히 문자열)
+    - user_id: 사용자 식별자
     - items: 여러 소비 항목 (메모/금액)
-    - date: 선택. 없으면 서버가 오늘(Asia/Seoul)로 처리
+    - date: 선택. 없으면 서버가 오늘로 처리
     - analyze: 선택. 기본 True (AI 분석 수행)
     """
+
     user_id: str
     items: List[SpendingItemInput]
     date: Optional[str] = None
@@ -51,6 +48,7 @@ class BulkSpendingsRequest(BaseModel):
 
 class SpendingItemAnalyzed(BaseModel):
     """AI 분석 후 항목 스키마 (DB 저장용)"""
+
     memo: str
     amount: int
     category: Optional[str] = None
@@ -60,6 +58,7 @@ class SpendingItemAnalyzed(BaseModel):
 
 class SpendingDailyDoc(BaseModel):
     """spendings 컬렉션에 저장되는 일별 문서 스키마"""
+
     id: Optional[str] = Field(default=None, alias="_id")
     user_id: str
     spent_at: str  # YYYY-MM-DD
@@ -76,13 +75,16 @@ class DailyReportResponse(BaseModel):
 
 
 class WeeklyReportResponse(BaseModel):
+    # 주간 리포트 응답
     totals: Dict[str, int]  # 카테고리별 합계
     deltas: Dict[str, float]  # 전주 대비 증감률 (-1~1 범위 가정)
     comment: str
+    total_amount: Optional[int] = None  # 이번 주 총 소비
 
 
 class MonthlyProfileResponse(BaseModel):
     type: str
     rationale: str
     advice: str
+
 

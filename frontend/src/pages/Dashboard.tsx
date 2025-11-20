@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom'
  * Dashboard 페이지
  * - 상단: 벌크 입력 카드 + 프로필 카드
  * - 중앙: 월간 캘린더
- * - 우측: 이번 달/이번 주 요약 + 월간 타입 + 일간 코멘트
+ * - 우측: 선택 월 요약 + 일간 코멘트
  */
 export default function Dashboard() {
   const { user } = useAuthState()
@@ -25,16 +25,18 @@ export default function Dashboard() {
   const dd = String(today.getDate()).padStart(2, '0')
   const [date, setDate] = useState<string>(`${yyyy}-${mm}-${dd}`)
 
-  const from = `${yyyy}-${mm}-01`
-  const to = `${yyyy}-${mm}-31`
-  const monthStr = `${yyyy}-${mm}`
+  // 캘린더에서 보고 있는 월 (YYYY-MM)
+  const [calendarMonth, setCalendarMonth] = useState<string>(`${yyyy}-${mm}`)
+
+  const from = `${calendarMonth}-01`
+  const to = `${calendarMonth}-31`
 
   const nav = useNavigate()
   const { data: spend } = useSpendings({ user_id: userId, from, to })
   const { data: daily } = useDailyReport({ user_id: userId, date })
-  const { data: monthly } = useMonthlyProfile({ user_id: userId, month: monthStr })
+  const { data: monthly } = useMonthlyProfile({ user_id: userId, month: calendarMonth })
 
-  // 날짜별 합계 집계 (캘린더 용)
+  // 날짜별 합계 집계 (캘린더)
   const summaries = useMemo(() => {
     const map: Record<string, number> = {}
     for (const it of spend?.items || []) {
@@ -44,7 +46,7 @@ export default function Dashboard() {
   }, [spend])
 
   useEffect(() => {
-    // 필요 시 향후 자동 리프레시 로직 추가 가능
+    // 필요하면 여기서 추가 로직 사용
   }, [])
 
   const monthTotal = useMemo(
@@ -73,6 +75,7 @@ export default function Dashboard() {
             setDate(d)
             nav(`/daily/${d}`)
           }}
+          onMonthChange={(m) => setCalendarMonth(m)}
         />
       </div>
 
@@ -80,8 +83,10 @@ export default function Dashboard() {
       <div className="col-span-5 flex flex-col gap-4">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 grid grid-cols-2 gap-3">
           <div>
-            <div className="text-xs text-gray-500">이번 달 총 소비</div>
-            <div className="text-2xl font-bold text-slate-900">₩{monthTotal.toLocaleString()}</div>
+            <div className="text-xs text-gray-500">선택 월 총 지출</div>
+            <div className="text-2xl font-bold text-slate-900">
+              ₩{monthTotal.toLocaleString()}
+            </div>
           </div>
           <div>
             <div className="text-xs text-gray-500">이번 주</div>
@@ -90,10 +95,14 @@ export default function Dashboard() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
-          <div className="text-xs text-gray-500 mb-1">월간 타입 ({monthStr})</div>
-          <div className="text-lg font-semibold mb-2 text-slate-900">{monthly?.type || '월간 타입 분석 없음'}</div>
-          <div className="text-sm text-gray-700 mb-1 whitespace-pre-line">{monthly?.rationale}</div>
-          <div className="text-sm text-gray-800">👉 {monthly?.advice}</div>
+          <div className="text-xs text-gray-500 mb-1">월간 타입 ({calendarMonth})</div>
+          <div className="text-lg font-semibold mb-2 text-slate-900">
+            {monthly?.type || '월간 타입 분석 없음'}
+          </div>
+          <div className="text-sm text-gray-700 mb-1 whitespace-pre-line">
+            {monthly?.rationale}
+          </div>
+          <div className="text-sm text-gray-800">{monthly?.advice && `👉 ${monthly.advice}`}</div>
         </div>
 
         <AICommentBox comment={daily?.ai_comment} />
