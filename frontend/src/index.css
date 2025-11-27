@@ -12,12 +12,22 @@ body.dark a { @apply text-blue-400; }
 
 /* 카드 / 텍스트 톤 조정 */
 body.dark .bg-white { @apply bg-slate-800 border-slate-700; }
+body.dark .border-gray-200 { @apply border-slate-700; }
 body.dark .border-slate-100 { @apply border-slate-700; }
 body.dark .text-gray-500 { @apply text-gray-400; }
 body.dark .text-gray-600 { @apply text-gray-300; }
 body.dark .text-gray-700 { @apply text-gray-200; }
 body.dark .text-gray-800 { @apply text-gray-100; }
 body.dark .text-slate-900 { @apply text-slate-50; }
+
+/* 입력 / 셀렉트 가독성 */
+body.dark input,
+body.dark select {
+  @apply bg-slate-800 text-slate-100 border-slate-600;
+}
+body.dark input::placeholder {
+  @apply text-gray-400;
+}
 
 /* 다크 모드 토글 버튼 (달/해 이모지) */
 .theme-toggle {
@@ -27,3 +37,13 @@ body.dark .theme-toggle {
   @apply border-slate-500 bg-slate-700 text-slate-100 hover:bg-slate-600;
 }
 
+/* 캘린더 셀 hover 효과 */
+.calendar-cell {
+  transition: background-color 0.15s ease;
+}
+.calendar-cell:hover {
+  background-color: rgba(59, 130, 246, 0.08);
+}
+body.dark .calendar-cell:hover {
+  background-color: rgba(148, 163, 184, 0.18);
+}

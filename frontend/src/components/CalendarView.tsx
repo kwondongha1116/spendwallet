@@ -49,6 +49,7 @@ export default function CalendarView({ summaries, onDateClick, onMonthChange }: 
         dayCellDidMount={(arg) => {
           arg.el.setAttribute('title', '일간 분석 확인하기')
           arg.el.style.cursor = 'pointer'
+          arg.el.classList.add('calendar-cell')
         }}
       />
     </div>
