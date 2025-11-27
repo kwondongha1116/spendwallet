@@ -39,7 +39,7 @@ export default function App() {
             </button>
             <button
               type="button"
-              className="text-lg"
+              className="theme-toggle"
               aria-label="다크 모드 전환"
               onClick={() => setIsDark((v) => !v)}
             >

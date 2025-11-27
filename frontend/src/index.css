@@ -12,7 +12,18 @@ body.dark a { @apply text-blue-400; }
 
 /* 카드 / 텍스트 톤 조정 */
 body.dark .bg-white { @apply bg-slate-800 border-slate-700; }
+body.dark .border-slate-100 { @apply border-slate-700; }
 body.dark .text-gray-500 { @apply text-gray-400; }
 body.dark .text-gray-600 { @apply text-gray-300; }
+body.dark .text-gray-700 { @apply text-gray-200; }
+body.dark .text-gray-800 { @apply text-gray-100; }
 body.dark .text-slate-900 { @apply text-slate-50; }
+
+/* 다크 모드 토글 버튼 (달/해 이모지) */
+.theme-toggle {
+  @apply flex items-center justify-center w-8 h-8 rounded-full border border-slate-300 bg-white/70 text-slate-700 text-sm shadow-sm transition hover:bg-white active:scale-95;
+}
+body.dark .theme-toggle {
+  @apply border-slate-500 bg-slate-700 text-slate-100 hover:bg-slate-600;
+}
 
