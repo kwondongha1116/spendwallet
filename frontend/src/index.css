@@ -2,7 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 간단한 전역 스타일 */
+/* 기본 라이트 모드 */
 body { @apply bg-gray-50 text-gray-900; }
 a { @apply text-blue-600; }
+
+/* 다크 모드 */
+body.dark { @apply bg-slate-900 text-slate-100; }
+body.dark a { @apply text-blue-400; }
+
+/* 카드 / 텍스트 톤 조정 */
+body.dark .bg-white { @apply bg-slate-800 border-slate-700; }
+body.dark .text-gray-500 { @apply text-gray-400; }
+body.dark .text-gray-600 { @apply text-gray-300; }
+body.dark .text-slate-900 { @apply text-slate-50; }
 
