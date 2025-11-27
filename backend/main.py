@@ -22,6 +22,7 @@ from routers.spendings import router as spendings_router
 from routers.reports import router as reports_router
 from routers.users import router as users_router
 from routers.auth import router as auth_router
+from routers.auth_google import router as auth_google_router
 
 app = FastAPI(title="spendWallet API", version="0.1.0")
 
@@ -69,6 +70,7 @@ app.include_router(users_router)
 app.include_router(spendings_router)
 app.include_router(reports_router)
 app.include_router(auth_router)
+app.include_router(auth_google_router)
 
 
 @app.get("/")

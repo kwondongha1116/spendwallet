@@ -9,6 +9,7 @@ import Weekly from './pages/Weekly'
 import Monthly from './pages/Monthly'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import AuthCallback from './pages/AuthCallback'
 import { AuthProvider } from './hooks/useAuth'
 import Daily from './pages/Daily'
 
@@ -26,6 +27,7 @@ const router = createBrowserRouter([
   },
   { path: '/login', element: <Login /> },
   { path: '/register', element: <Register /> },
+  { path: '/auth/callback', element: <AuthCallback /> },
 ])
 
 const qc = new QueryClient()
