@@ -12,6 +12,7 @@ import Register from './pages/Register'
 import AuthCallback from './pages/AuthCallback'
 import { AuthProvider } from './hooks/useAuth'
 import Daily from './pages/Daily'
+import MarketDetail from './pages/MarketDetail'
 
 const router = createBrowserRouter([
   {
@@ -23,6 +24,7 @@ const router = createBrowserRouter([
       { path: 'weekly', element: <Weekly /> },
       { path: 'monthly', element: <Monthly /> },
       { path: 'daily/:date', element: <Daily /> },
+      { path: 'markets/:name', element: <MarketDetail /> },
     ],
   },
   { path: '/login', element: <Login /> },
