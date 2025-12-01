@@ -3,6 +3,7 @@ import BulkInput from '../components/BulkInput'
 import AICommentBox from '../components/AICommentBox'
 import CalendarView from '../components/CalendarView'
 import ProfileCard from '../components/ProfileCard'
+import MarketSummaryCard from '../components/MarketSummaryCard'
 import { useDailyReport, useMonthlyProfile } from '../hooks/useReports'
 import { useSpendings } from '../hooks/useSpendings'
 import { getISOWeekString } from '../lib/date'
@@ -13,7 +14,7 @@ import { useNavigate } from 'react-router-dom'
  * Dashboard 페이지
  * - 상단: 벌크 입력 카드 + 프로필 카드
  * - 중앙: 월간 캘린더
- * - 우측: 선택 월 요약 + 일간 코멘트
+ * - 우측: 선택 월 요약 + 시장 지수 + 일간 코멘트
  */
 export default function Dashboard() {
   const { user } = useAuthState()
@@ -46,7 +47,7 @@ export default function Dashboard() {
   }, [spend])
 
   useEffect(() => {
-    // 필요하면 여기서 추가 로직 사용
+    // 필요하면 여기에서 추가 로직 사용
   }, [])
 
   const monthTotal = useMemo(
@@ -79,14 +80,12 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* 우측: 월간/주간 요약 + 일간 코멘트 */}
+      {/* 오른쪽: 월간/주간 요약 + 시장 지수 + 일간 코멘트 */}
       <div className="col-span-5 flex flex-col gap-4">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 grid grid-cols-2 gap-3">
           <div>
             <div className="text-xs text-gray-500">선택 월 총 지출</div>
-            <div className="text-2xl font-bold text-slate-900">
-              ₩{monthTotal.toLocaleString()}
-            </div>
+            <div className="text-2xl font-bold text-slate-900">₩{monthTotal.toLocaleString()}</div>
           </div>
           <div>
             <div className="text-xs text-gray-500">이번 주</div>
@@ -102,8 +101,12 @@ export default function Dashboard() {
           <div className="text-sm text-gray-700 mb-1 whitespace-pre-line">
             {monthly?.rationale}
           </div>
-          <div className="text-sm text-gray-800">{monthly?.advice && `👉 ${monthly.advice}`}</div>
+          <div className="text-sm text-gray-800">
+            {monthly?.advice && `👉 ${monthly.advice}`}
+          </div>
         </div>
+
+        <MarketSummaryCard />
 
         <AICommentBox comment={daily?.ai_comment} />
       </div>
