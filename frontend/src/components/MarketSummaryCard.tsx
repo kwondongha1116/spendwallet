@@ -40,11 +40,21 @@ export default function MarketSummaryCard() {
     )
   }
 
+  const entries = Object.entries(data)
+  if (!entries.length) {
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 text-sm text-gray-600">
+        📈 이번 주 주요 지수
+        <div className="mt-2 text-xs text-gray-500">표시할 데이터가 없습니다.</div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 text-xs md:text-sm">
       <h3 className="text-sm font-medium mb-3">📈 이번 주 주요 지수</h3>
       <div className="space-y-3">
-        {Object.entries(data).map(([name, v]) => {
+        {entries.map(([name, v]) => {
           const trendData = v.trend.map((val, i) => ({ x: i, y: val }))
           const color = v.change >= 0 ? '#ef4444' : '#3b82f6'
           const lineData = {
@@ -91,4 +101,3 @@ export default function MarketSummaryCard() {
     </div>
   )
 }
-
