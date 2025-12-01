@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Dict, List, Optional
+from urllib.parse import quote
 
 import requests
 from fastapi import APIRouter
@@ -10,17 +11,27 @@ router = APIRouter(prefix="/api/stocks", tags=["stocks"])
 
 def _get_price_series(symbol: str) -> Optional[List[float]]:
   """
-  Yahoo Finance chart 엔드포인트를 직접 호출해서
+  Yahoo Finance chart 엔드포인트에서
   최근 7일 종가 배열을 반환한다.
   """
-  url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+  # 지수 심볼에 포함된 '^' 등이 서버에서 거부되지 않도록 인코딩
+  encoded_symbol = quote(symbol, safe="")
+  url = f"https://query1.finance.yahoo.com/v8/finance/chart/{encoded_symbol}"
   params = {"range": "7d", "interval": "1d"}
 
+  headers = {
+    # 일부 환경에서 기본 UA 없이 호출하면 차단될 수 있어 브라우저 형태로 지정
+    "User-Agent": (
+      "Mozilla/5.0 (compatible; spendWallet/0.1; +https://spendwallet.vercel.app)"
+    )
+  }
+
   try:
-    res = requests.get(url, params=params, timeout=5)
+    res = requests.get(url, params=params, headers=headers, timeout=5)
     res.raise_for_status()
     data = res.json()
-  except Exception:
+  except Exception as e:  # 외부 API 장애 시 서버는 죽지 않고 로깅만
+    print(f"[STOCKS] failed to fetch {symbol}: {e}")
     return None
 
   result = (data.get("chart") or {}).get("result")
@@ -38,7 +49,7 @@ def _get_price_series(symbol: str) -> Optional[List[float]]:
 
 @router.get("/summary")
 def get_market_summary() -> Dict[str, Dict]:
-  """이번 주 주요 지수 요약 (가격, 변동률, 7일 추세)"""
+  """이번 주 주요 지수 요약 (가격·변동률, 7일 추세)"""
   tickers = {
     "코스피": "^KS11",
     "나스닥": "^IXIC",
