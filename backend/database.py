@@ -79,4 +79,5 @@ def collections() -> Dict[str, Any]:
         "spendings": db.get_collection("spendings"),
         "weekly_reports": db.get_collection("weekly_reports"),
         "monthly_profiles": db.get_collection("monthly_profiles"),
+        "news_insights": db.get_collection("news_insights"),
     }

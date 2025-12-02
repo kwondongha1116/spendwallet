@@ -38,7 +38,9 @@ export default function WeeklyNewsCard() {
           </div>
         ))}
         {headlines.length === 0 && (
-          <div className="text-xs text-gray-500">표시할 뉴스가 아직 없어요.</div>
+          <div className="text-xs text-gray-500">
+            이번 주에는 가져올 헤드라인이 많지 않았어요. 대신 분위기만 간단히 정리해 드릴게요.
+          </div>
         )}
       </div>
 

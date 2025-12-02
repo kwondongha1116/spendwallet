@@ -8,13 +8,13 @@ import requests
 from fastapi import APIRouter, HTTPException, Query
 
 from database import collections
-from ai_service import _call_gpt  # 내부 유틸 재사용
+from ai_service import _call_gpt
 
 router = APIRouter(prefix="/api/insights", tags=["insights"])
 
 
 async def _get_user_top_category_this_week(user_id: str) -> str:
-    """가장 최근 7일 기준 대표 소비 카테고리 한 개를 반환."""
+    """최근 7일 기준 대표 소비 카테고리 한 개를 반환."""
     spend_col = collections()["spendings"]
 
     end_dt = datetime.utcnow()
@@ -42,25 +42,65 @@ async def get_weekly_news_insight(user_id: str = Query(...)) -> Dict:
     if not api_key:
         raise HTTPException(status_code=500, detail="NEWS_API_KEY is not configured")
 
-    # 1) 뉴스API에서 한국 비즈니스 헤드라인 3개 정도 가져오기
-    url = (
-        "https://newsapi.org/v2/top-headlines?"
-        "category=business&language=ko&country=kr&pageSize=5"
-        f"&apiKey={api_key}"
-    )
+    # 1) NewsAPI에서 한국 비즈니스 헤드라인 3개 정도 가져오기
+    # country=kr 기준으로 가져오고, 결과가 없으면 category 제한을 풀어 한 번 더 시도
+    def _fetch_headlines() -> List[str]:
+        base = "https://newsapi.org/v2/top-headlines"
+        params = {
+            "country": "kr",
+            "category": "business",
+            "pageSize": 5,
+            "apiKey": api_key,
+        }
+        try:
+            res = requests.get(base, params=params, timeout=5)
+            res.raise_for_status()
+            data = res.json()
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Failed to fetch news: {e}")
 
-    try:
-        res = requests.get(url, timeout=5)
-        res.raise_for_status()
-        data = res.json()
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Failed to fetch news: {e}")
+        articles: List[Dict] = data.get("articles") or []
+        heads = [a.get("title", "").strip() for a in articles if a.get("title")]
+        if heads:
+            return heads[:3]
 
-    articles: List[Dict] = data.get("articles") or []
-    headlines = [a.get("title", "").strip() for a in articles if a.get("title")][:3]
+        # 비즈니스 카테고리에 기사가 없으면 전체 헤드라인으로 재시도
+        try:
+            res2 = requests.get(
+                base,
+                params={"country": "kr", "pageSize": 5, "apiKey": api_key},
+                timeout=5,
+            )
+            res2.raise_for_status()
+            data2 = res2.json()
+            articles2: List[Dict] = data2.get("articles") or []
+            heads2 = [a.get("title", "").strip() for a in articles2 if a.get("title")]
+            return heads2[:3]
+        except Exception:
+            return []
+
+    headlines = _fetch_headlines()
 
     # 2) 이번 주 대표 소비 카테고리
     top_category = await _get_user_top_category_this_week(user_id)
+
+    # 주 단위 캐시 키 (같은 주/같은 뉴스면 같은 멘트 유지)
+    year, week, _ = datetime.utcnow().isocalendar()
+    week_key = f"{year}-W{week:02d}"
+
+    news_col = collections()["news_insights"]
+    existing = await news_col.find_one({"user_id": user_id, "week_key": week_key})
+    if existing:
+        if existing.get("headlines") == headlines and existing.get("top_category") == top_category:
+            insight = existing.get("insight") or {}
+            return {
+                "headlines": headlines,
+                "insight": {
+                    "summary": str(insight.get("summary") or ""),
+                    "mood": str(insight.get("mood") or "중립"),
+                },
+                "top_category": top_category,
+            }
 
     # 3) GPT에게 분위기 + 소비 카테고리 한 문장 요청
     system_prompt = (
@@ -96,8 +136,22 @@ async def get_weekly_news_insight(user_id: str = Query(...)) -> Dict:
                 insight["summary"] = str(parsed.get("summary") or "").strip()
                 insight["mood"] = str(parsed.get("mood") or "중립").strip()
         except Exception:
-            # 파싱 실패 시 그냥 원문을 요약문으로 사용
+            # JSON 파싱 실패 시에는 원문 전체를 요약문으로 사용
             insight["summary"] = raw.strip()
+
+    # 캐시에 저장 (같은 주/같은 뉴스면 재사용)
+    doc = {
+        "user_id": user_id,
+        "week_key": week_key,
+        "headlines": headlines,
+        "top_category": top_category,
+        "insight": insight,
+        "updated_at": datetime.utcnow(),
+    }
+    if existing:
+        await news_col.update_one({"_id": existing["_id"]}, {"$set": doc})
+    else:
+        await news_col.insert_one(doc)
 
     return {"headlines": headlines, "insight": insight, "top_category": top_category}
 
