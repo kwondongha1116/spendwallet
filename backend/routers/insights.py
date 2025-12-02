@@ -35,6 +35,70 @@ async def _get_user_top_category_this_week(user_id: str) -> str:
     return max(cat_sum.items(), key=lambda x: x[1])[0]
 
 
+def _request_titles(url: str, params: Dict[str, str]) -> List[str]:
+    """NewsAPI에서 기사 제목 리스트를 가져온다. 실패하면 빈 리스트."""
+    try:
+        res = requests.get(url, params=params, timeout=5)
+        res.raise_for_status()
+        data = res.json()
+    except Exception as e:
+        # 서버를 죽이지 않고 로그만 남기고 빈 리스트 반환
+        print(f"[NEWS] request error: {e}")
+        return []
+
+    if data.get("status") != "ok":
+        # NewsAPI 에러 코드/메시지 로깅
+        print(f"[NEWS] status={data.get('status')} code={data.get('code')} message={data.get('message')}")
+        return []
+
+    articles: List[Dict] = data.get("articles") or []
+    return [a.get("title", "").strip() for a in articles if a.get("title")]
+
+
+def _fetch_headlines(api_key: str) -> List[str]:
+    """여러 전략으로 한국어 경제/일반 뉴스를 시도해서 최대 3개의 헤드라인을 반환."""
+    base_top = "https://newsapi.org/v2/top-headlines"
+    base_everything = "https://newsapi.org/v2/everything"
+
+    # 1) 한국 비즈니스 헤드라인
+    heads = _request_titles(
+        base_top,
+        {
+            "country": "kr",
+            "category": "business",
+            "pageSize": "10",
+            "apiKey": api_key,
+        },
+    )
+    if heads:
+        return heads[:3]
+
+    # 2) 한국 전체 헤드라인 (카테고리 제한 없음)
+    heads = _request_titles(
+        base_top,
+        {
+            "country": "kr",
+            "pageSize": "10",
+            "apiKey": api_key,
+        },
+    )
+    if heads:
+        return heads[:3]
+
+    # 3) everything 검색으로 한국어 경제/소비 관련 키워드
+    heads = _request_titles(
+        base_everything,
+        {
+            "q": "경제 OR 물가 OR 소비 OR 기술",
+            "language": "ko",
+            "pageSize": "10",
+            "sortBy": "publishedAt",
+            "apiKey": api_key,
+        },
+    )
+    return heads[:3]
+
+
 @router.get("/week_news")
 async def get_weekly_news_insight(user_id: str = Query(...)) -> Dict:
     """이번 주 주요 뉴스 요약 + 사용자의 대표 소비 카테고리를 가볍게 엮은 인사이트."""
@@ -42,46 +106,9 @@ async def get_weekly_news_insight(user_id: str = Query(...)) -> Dict:
     if not api_key:
         raise HTTPException(status_code=500, detail="NEWS_API_KEY is not configured")
 
-    # 1) NewsAPI에서 한국 비즈니스 헤드라인 3개 정도 가져오기
-    # country=kr 기준으로 가져오고, 결과가 없으면 category 제한을 풀어 한 번 더 시도
-    def _fetch_headlines() -> List[str]:
-        base = "https://newsapi.org/v2/top-headlines"
-        params = {
-            "country": "kr",
-            "category": "business",
-            "pageSize": 5,
-            "apiKey": api_key,
-        }
-        try:
-            res = requests.get(base, params=params, timeout=5)
-            res.raise_for_status()
-            data = res.json()
-        except Exception as e:
-            raise HTTPException(status_code=502, detail=f"Failed to fetch news: {e}")
+    headlines = _fetch_headlines(api_key)
 
-        articles: List[Dict] = data.get("articles") or []
-        heads = [a.get("title", "").strip() for a in articles if a.get("title")]
-        if heads:
-            return heads[:3]
-
-        # 비즈니스 카테고리에 기사가 없으면 전체 헤드라인으로 재시도
-        try:
-            res2 = requests.get(
-                base,
-                params={"country": "kr", "pageSize": 5, "apiKey": api_key},
-                timeout=5,
-            )
-            res2.raise_for_status()
-            data2 = res2.json()
-            articles2: List[Dict] = data2.get("articles") or []
-            heads2 = [a.get("title", "").strip() for a in articles2 if a.get("title")]
-            return heads2[:3]
-        except Exception:
-            return []
-
-    headlines = _fetch_headlines()
-
-    # 2) 이번 주 대표 소비 카테고리
+    # 이번 주 대표 소비 카테고리
     top_category = await _get_user_top_category_this_week(user_id)
 
     # 주 단위 캐시 키 (같은 주/같은 뉴스면 같은 멘트 유지)
@@ -102,7 +129,7 @@ async def get_weekly_news_insight(user_id: str = Query(...)) -> Dict:
                 "top_category": top_category,
             }
 
-    # 3) GPT에게 분위기 + 소비 카테고리 한 문장 요청
+    # GPT에게 분위기 + 소비 카테고리 한 문장 요청
     system_prompt = (
         "너는 사용자의 소비 리포트에 가볍게 덧붙일 '이번 주 이슈 브리핑'을 써주는 한국어 어시스턴트야. "
         "뉴스와 소비 사이의 인과관계를 과도하게 만들지 말고, 분위기를 연결하는 정도로만 자연스럽게 엮어줘."
