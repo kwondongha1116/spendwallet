@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import BulkInput from '../components/BulkInput'
-import AICommentBox from '../components/AICommentBox'
 import CalendarView from '../components/CalendarView'
 import ProfileCard from '../components/ProfileCard'
 import MarketSummaryCard from '../components/MarketSummaryCard'
@@ -108,7 +107,6 @@ export default function Dashboard() {
         </div>
 
         <MarketSummaryCard />
-        <AICommentBox comment={daily?.ai_comment} />
         <WeeklyNewsCard />
       </div>
     </div>

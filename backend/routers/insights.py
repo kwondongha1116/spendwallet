@@ -35,33 +35,41 @@ async def _get_user_top_category_this_week(user_id: str) -> str:
     return max(cat_sum.items(), key=lambda x: x[1])[0]
 
 
-def _request_titles(url: str, params: Dict[str, str]) -> List[str]:
-    """NewsAPI에서 기사 제목 리스트를 가져온다. 실패하면 빈 리스트."""
+def _request_articles(url: str, params: Dict[str, str]) -> List[Dict[str, str]]:
+    """NewsAPI에서 기사 {title,url} 리스트를 가져온다. 실패하면 빈 리스트."""
     try:
         res = requests.get(url, params=params, timeout=5)
         res.raise_for_status()
         data = res.json()
     except Exception as e:
-        # 서버를 죽이지 않고 로그만 남기고 빈 리스트 반환
         print(f"[NEWS] request error: {e}")
         return []
 
     if data.get("status") != "ok":
-        # NewsAPI 에러 코드/메시지 로깅
-        print(f"[NEWS] status={data.get('status')} code={data.get('code')} message={data.get('message')}")
+        print(
+            f"[NEWS] status={data.get('status')} "
+            f"code={data.get('code')} message={data.get('message')}"
+        )
         return []
 
-    articles: List[Dict] = data.get("articles") or []
-    return [a.get("title", "").strip() for a in articles if a.get("title")]
+    articles = data.get("articles") or []
+    result: List[Dict[str, str]] = []
+    for a in articles:
+        title = (a.get("title") or "").strip()
+        if not title:
+            continue
+        url_val = (a.get("url") or "").strip()
+        result.append({"title": title, "url": url_val})
+    return result
 
 
-def _fetch_headlines(api_key: str) -> List[str]:
+def _fetch_headlines(api_key: str) -> List[Dict[str, str]]:
     """여러 전략으로 한국어 경제/일반 뉴스를 시도해서 최대 3개의 헤드라인을 반환."""
     base_top = "https://newsapi.org/v2/top-headlines"
     base_everything = "https://newsapi.org/v2/everything"
 
     # 1) 한국 비즈니스 헤드라인
-    heads = _request_titles(
+    arts = _request_articles(
         base_top,
         {
             "country": "kr",
@@ -70,11 +78,11 @@ def _fetch_headlines(api_key: str) -> List[str]:
             "apiKey": api_key,
         },
     )
-    if heads:
-        return heads[:3]
+    if arts:
+        return arts[:3]
 
     # 2) 한국 전체 헤드라인 (카테고리 제한 없음)
-    heads = _request_titles(
+    arts = _request_articles(
         base_top,
         {
             "country": "kr",
@@ -82,11 +90,11 @@ def _fetch_headlines(api_key: str) -> List[str]:
             "apiKey": api_key,
         },
     )
-    if heads:
-        return heads[:3]
+    if arts:
+        return arts[:3]
 
     # 3) everything 검색으로 한국어 경제/소비 관련 키워드
-    heads = _request_titles(
+    arts = _request_articles(
         base_everything,
         {
             "q": "경제 OR 물가 OR 소비 OR 기술",
@@ -96,12 +104,15 @@ def _fetch_headlines(api_key: str) -> List[str]:
             "apiKey": api_key,
         },
     )
-    return heads[:3]
+    return arts[:3]
 
 
 @router.get("/week_news")
 async def get_weekly_news_insight(user_id: str = Query(...)) -> Dict:
-    """이번 주 주요 뉴스 요약 + 사용자의 대표 소비 카테고리를 가볍게 엮은 인사이트."""
+    """
+    이번 주 세계 뉴스 분위기 + 사용자의 대표 소비 카테고리를
+    가볍게 엮은 인사이트를 반환한다.
+    """
     api_key = os.getenv("NEWS_API_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="NEWS_API_KEY is not configured")
@@ -140,9 +151,9 @@ async def get_weekly_news_insight(user_id: str = Query(...)) -> Dict:
 "요즘 세상 분위기 속 내 소비 느낌"을 한 문장으로 표현해줘.
 
 뉴스 헤드라인:
-- {headlines[0] if len(headlines) > 0 else ''}
-- {headlines[1] if len(headlines) > 1 else ''}
-- {headlines[2] if len(headlines) > 2 else ''}
+- {headlines[0]["title"] if len(headlines) > 0 else ''}
+- {headlines[1]["title"] if len(headlines) > 1 else ''}
+- {headlines[2]["title"] if len(headlines) > 2 else ''}
 
 출력 형식 (JSON 한 줄):
 {{
