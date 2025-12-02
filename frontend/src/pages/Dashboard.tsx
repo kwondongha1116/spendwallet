@@ -9,6 +9,7 @@ import { useSpendings } from '../hooks/useSpendings'
 import { getISOWeekString } from '../lib/date'
 import { useAuthState } from '../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
+import WeeklyNewsCard from '../components/WeeklyNewsCard'
 
 /**
  * Dashboard 페이지
@@ -107,10 +108,9 @@ export default function Dashboard() {
         </div>
 
         <MarketSummaryCard />
-
         <AICommentBox comment={daily?.ai_comment} />
+        <WeeklyNewsCard />
       </div>
     </div>
   )
 }
-
