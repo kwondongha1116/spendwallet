@@ -6,8 +6,8 @@ import GoogleLoginButton from '../components/GoogleLoginButton'
 export default function Login() {
   const nav = useNavigate()
   const { login } = useAuthState()
-  const [email, setEmail] = useState('test@example.com')
-  const [password, setPassword] = useState('test1234')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
   const onSubmit = async () => {
@@ -16,7 +16,7 @@ export default function Login() {
       await login(email, password)
       nav('/dashboard')
     } catch (e: any) {
-      alert(e?.response?.data?.detail || e?.message || '로그인에 실패했습니다. 다시 시도해주세요.')
+      alert(e?.response?.data?.detail || e?.message || '로그?�에 ?�패?�습?�다. ?�시 ?�도?�주?�요.')
     } finally {
       setLoading(false)
     }
@@ -31,24 +31,24 @@ export default function Login() {
             SPENDWALLET
           </p>
           <h2 className="text-2xl md:text-3xl font-bold leading-snug mb-4">
-            오늘의 소비가 내일의 패턴을 만듭니다.
+            ?�늘???�비가 ?�일???�턴??만듭?�다.
           </h2>
           <p className="text-sm md:text-base text-blue-100">
-            작은 기록부터 시작해보세요.
+            ?��? 기록부???�작?�보?�요.
           </p>
         </div>
 
         {/* Right login form section */}
         <div className="flex-1 flex items-center">
           <div className="bg-white rounded-md shadow p-6 md:p-8 w-full max-w-md ml-auto">
-            <h1 className="text-xl font-semibold mb-4">로그인</h1>
-            <label className="text-xs text-gray-600">이메일</label>
+            <h1 className="text-xl font-semibold mb-4">로그??/h1>
+            <label className="text-xs text-gray-600">?�메??/label>
             <input
               className="border rounded w-full px-2 py-2 mb-3"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            <label className="text-xs text-gray-600">비밀번호</label>
+            <label className="text-xs text-gray-600">비�?번호</label>
             <input
               className="border rounded w-full px-2 py-2 mb-4"
               type="password"
@@ -60,14 +60,13 @@ export default function Login() {
               disabled={loading}
               className="w-full bg-blue-600 text-white py-2 rounded mb-3 disabled:opacity-70"
             >
-              {loading ? '로그인 중...' : '로그인'}
+              {loading ? '로그??�?..' : '로그??}
             </button>
             <GoogleLoginButton />
             <div className="text-sm mt-4 text-center md:text-left">
-              계정이 없으신가요?{' '}
+              계정???�으?��???{' '}
               <Link className="text-blue-600 font-medium" to="/register">
-                회원가입
-              </Link>
+                ?�원가??              </Link>
             </div>
           </div>
         </div>
